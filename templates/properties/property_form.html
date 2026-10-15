@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Редагувати{% else %}Додати{% endif %} об'єкт — DomHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <h2 class="fw-bold mb-4">{% if object %}Редагувати{% else %}Додати{% endif %} об'єкт</h2>
+                    <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <div class="text-danger small">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                {% if object and object.images.all %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Фото галереї (позначте ті, що треба видалити)</label>
+                    <div class="row g-2">
+                        {% for img in object.images.all %}
+                        <div class="col-4 col-md-3">
+                            <label class="d-block position-relative" style="cursor: pointer;">
+                                <img src="{{ img.image.url }}" class="img-fluid rounded w-100"
+                                     alt="{{ img.caption }}" style="height: 90px; object-fit: cover;">
+                                <input type="checkbox" name="delete_images" value="{{ img.pk }}"
+                                       class="form-check-input position-absolute top-0 end-0 m-1">
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Додаткові фото (можна декілька)</label>
+                    <input type="file" name="extra_images" multiple class="form-control" accept="image/*">
+                </div>
+
+                <button type="submit" class="btn btn-accent fw-bold w-100">Зберегти</button>
+                <a href="{% url 'property_list' %}" class="btn btn-outline-secondary w-100 mt-2">Скасувати</a>
+            </form>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
