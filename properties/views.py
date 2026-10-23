@@ -1,10 +1,15 @@
+import json
+
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.utils.safestring import mark_safe
 
 from .forms import PropertyForm
 from .models import Category, Property, PropertyImage
@@ -80,10 +85,48 @@ def property_detail(request, pk):
         .select_related('category')
         .order_by('-created_at')[:3]
     )
+    image_url = request.build_absolute_uri(obj.main_image.url) if obj.main_image else ''
     return render(request, 'properties/property_detail.html', {
         'property': obj,
         'similar': similar,
+        'image_url': image_url,
+        'structured_data': property_structured_data(request, obj, image_url),
     })
+
+
+def property_structured_data(request, obj, image_url):
+    data = {
+        '@context': 'https://schema.org',
+        '@type': 'RealEstateListing',
+        'name': obj.title,
+        'description': obj.description,
+        'url': request.build_absolute_uri(obj.get_absolute_url()),
+        'datePosted': obj.created_at.date().isoformat(),
+        'offers': {
+            '@type': 'Offer',
+            'price': str(obj.price),
+            'priceCurrency': 'USD',
+            'businessFunction': 'http://purl.org/goodrelations/v1#LeaseOut'
+            if obj.deal_type == 'rent' else 'http://purl.org/goodrelations/v1#Sell',
+        },
+        'about': {
+            '@type': 'Accommodation',
+            'numberOfRooms': obj.rooms,
+            'floorSize': {'@type': 'QuantitativeValue', 'value': obj.area_sqm, 'unitCode': 'MTK'},
+            'address': {'@type': 'PostalAddress', 'streetAddress': obj.address, 'addressCountry': 'UA'},
+        },
+    }
+    if image_url:
+        data['image'] = image_url
+    if obj.latitude is not None and obj.longitude is not None:
+        data['about']['geo'] = {
+            '@type': 'GeoCoordinates',
+            'latitude': float(obj.latitude),
+            'longitude': float(obj.longitude),
+        }
+    text = json.dumps(data, ensure_ascii=False)
+    text = text.replace('<', '\\u003C').replace('>', '\\u003E').replace('&', '\\u0026')
+    return mark_safe(text)
 
 
 @login_required
@@ -161,3 +204,19 @@ def register(request):
         form = UserCreationForm()
 
     return render(request, 'registration/register.html', {'form': form})
+
+
+def robots_txt(request):
+    lines = [
+        'User-agent: *',
+        'Disallow: /admin/',
+        'Disallow: /api/',
+        'Disallow: /login/',
+        'Disallow: /register/',
+        'Disallow: /property/create/',
+        'Disallow: /property/*/edit/',
+        'Disallow: /property/*/delete/',
+        '',
+        f'Sitemap: {request.build_absolute_uri(reverse("sitemap"))}',
+    ]
+    return HttpResponse('\n'.join(lines) + '\n', content_type='text/plain')

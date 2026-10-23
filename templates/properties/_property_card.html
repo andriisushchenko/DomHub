@@ -3,7 +3,7 @@
         <div class="card property-card h-100">
             <div class="position-relative">
                 {% if p.main_image %}
-                    <img src="{{ p.main_image.url }}" class="card-img-top" alt="{{ p.title }}">
+                    <img src="{{ p.main_image.url }}" class="card-img-top" alt="{{ p.title }}" loading="lazy">
                 {% else %}
                     <div class="card-img-top bg-light d-flex align-items-center justify-content-center">
                         <i class="bi bi-house fs-1 text-muted"></i>

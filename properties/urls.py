@@ -1,12 +1,19 @@
+from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from . import api_views, views
+from .sitemaps import PropertySitemap, StaticSitemap
 
 router = DefaultRouter()
 router.register('properties', api_views.PropertyViewSet)
 router.register('categories', api_views.CategoryViewSet)
 router.register('agents', api_views.AgentViewSet)
+
+sitemaps = {
+    'static': StaticSitemap,
+    'properties': PropertySitemap,
+}
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -17,4 +24,6 @@ urlpatterns = [
     path('property/<int:pk>/delete/', views.property_delete, name='property_delete'),
     path('register/', views.register, name='register'),
     path('api/', include(router.urls)),
+    path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='sitemap'),
+    path('robots.txt', views.robots_txt, name='robots_txt'),
 ]

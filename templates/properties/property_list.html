@@ -4,6 +4,8 @@
     {% if current_deal_type == 'sale' %}Продаж{% elif current_deal_type == 'rent' %}Оренда{% else %}Всі об'єкти{% endif %} — DomHub
 {% endblock %}
 
+{% block meta_description %}{% if current_deal_type == 'sale' %}Продаж квартир, будинків, пентхаусів і офісів{% elif current_deal_type == 'rent' %}Оренда квартир, будинків, пентхаусів і офісів{% else %}Каталог нерухомості{% endif %} в Україні: {{ page_obj.paginator.count }} пропозицій з фото, цінами та картою. Фільтри за ціною, кімнатами та типом об'єкта.{% endblock %}
+
 {% block full_width %}
 <section class="page-header">
     <div class="container" style="max-width: 1024px;">

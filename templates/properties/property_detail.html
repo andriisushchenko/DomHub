@@ -1,6 +1,22 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ property.title }} — DomHub{% endblock %}
+{% block title %}{{ property.title }} — {{ property.get_deal_type_display }}, ${{ property.price|floatformat:"0g" }} | DomHub{% endblock %}
+
+{% block meta_description %}{% filter truncatechars:160 %}{{ property.get_deal_type_display }}: {{ property.category.name|lower }}, {{ property.rooms }} кімн., {{ property.area_sqm|floatformat:"-1" }} м², {{ property.address }}. Ціна ${{ property.price|floatformat:"0g" }}. {{ property.description }}{% endfilter %}{% endblock %}
+
+{% block meta_robots %}{% if property.is_active %}index, follow{% else %}noindex, follow{% endif %}{% endblock %}
+
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ property.title }} — ${{ property.price|floatformat:"0g" }}{% endblock %}
+{% block og_description %}{{ property.get_deal_type_display }} · {{ property.rooms }} кімн. · {{ property.area_sqm|floatformat:"-1" }} м² · {{ property.address }}{% endblock %}
+{% block og_image %}{% if image_url %}
+    <meta property="og:image" content="{{ image_url }}">
+    <meta property="og:image:alt" content="{{ property.title }}">
+{% endif %}{% endblock %}
+
+{% block structured_data %}
+    <script type="application/ld+json">{{ structured_data }}</script>
+{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -132,7 +148,7 @@
                     {% endif %}
                     {% for img in property.images.all %}
                     <div class="carousel-item {% if not property.main_image and forloop.first %}active{% endif %}">
-                        <img src="{{ img.image.url }}" class="d-block w-100" alt="{{ img.caption|default:property.title }}">
+                        <img src="{{ img.image.url }}" class="d-block w-100" alt="{{ img.caption|default:property.title }}" loading="lazy">
                     </div>
                     {% empty %}
                         {% if not property.main_image %}
@@ -158,11 +174,11 @@
             {% if property.images.all %}
             <div class="d-flex gap-2 mt-2 overflow-auto pb-1">
                 {% if property.main_image %}
-                <img src="{{ property.main_image.url }}" class="gallery-thumb active" alt=""
+                <img src="{{ property.main_image.url }}" class="gallery-thumb active" alt="{{ property.title }} — фото 1" loading="lazy"
                      data-bs-target="#gallery" data-bs-slide-to="0">
                 {% endif %}
                 {% for img in property.images.all %}
-                <img src="{{ img.image.url }}" class="gallery-thumb" alt=""
+                <img src="{{ img.image.url }}" class="gallery-thumb" alt="{{ property.title }} — фото {{ forloop.counter|add:1 }}" loading="lazy"
                      data-bs-target="#gallery" data-bs-slide-to="{% if property.main_image %}{{ forloop.counter }}{% else %}{{ forloop.counter0 }}{% endif %}">
                 {% endfor %}
             </div>
