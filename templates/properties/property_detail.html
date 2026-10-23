@@ -2,107 +2,338 @@
 
 {% block title %}{{ property.title }} — DomHub{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+    html { scroll-behavior: smooth; }
+
+    .gallery .carousel-item img {
+        height: 460px;
+        object-fit: cover;
+        border-radius: 20px;
+    }
+    .gallery-thumb {
+        width: 96px;
+        height: 68px;
+        object-fit: cover;
+        border-radius: 10px;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+    }
+    .gallery-thumb:hover, .gallery-thumb.active { opacity: 1; outline: 2px solid var(--accent); }
+
+    .section-nav {
+        top: 0;
+        z-index: 10;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+    }
+    .section-nav a {
+        color: var(--muted);
+        font-weight: 600;
+        text-decoration: none;
+        padding: 14px 0;
+        display: inline-block;
+    }
+    .section-nav a:hover { color: var(--accent); }
+
+    .landing-section { scroll-margin-top: 70px; }
+
+    .feature {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 18px;
+        height: 100%;
+    }
+    .feature i { font-size: 1.5rem; color: var(--accent); }
+
+    .contact-card { top: 20px; }
+    .agent-photo {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    .agent-placeholder {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        color: var(--muted);
+    }
+
+    .map-frame {
+        width: 100%;
+        height: 340px;
+        border: 0;
+        border-radius: 20px;
+    }
+
+    .mobile-contact-bar {
+        background: #fff;
+        border-top: 1px solid var(--border);
+        box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.08);
+        z-index: 1030;
+    }
+    @media (max-width: 991.98px) {
+        body { padding-bottom: 80px; }
+        .gallery .carousel-item img { height: 280px; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Головна</a></li>
+        <li class="breadcrumb-item">
+            <a href="{% url 'property_list' %}?deal_type={{ property.deal_type }}">{{ property.get_deal_type_display }}</a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">{{ property.title }}</li>
+    </ol>
+</nav>
 
-<div class="row g-4">
-    <div class="col-md-7">
-        {% if property.main_image %}
-        <img src="{{ property.main_image.url }}" class="img-fluid rounded-4 w-100 photo-zoom"
-             alt="{{ property.title }}" style="max-height: 450px; object-fit: cover; cursor: zoom-in;"
-             data-bs-toggle="modal" data-bs-target="#photoModal" data-full="{{ property.main_image.url }}">
-        {% endif %}
-
-        {% if property.images.all %}
-        <div class="row g-2 mt-2">
-            {% for img in property.images.all %}
-            <div class="col-3">
-                <img src="{{ img.image.url }}" class="img-fluid rounded photo-zoom" alt="{{ img.caption }}"
-                     style="cursor: zoom-in; height: 90px; object-fit: cover;"
-                     data-bs-toggle="modal" data-bs-target="#photoModal" data-full="{{ img.image.url }}">
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-    </div>
-
-    <div class="col-md-5">
-        <span class="badge {% if property.deal_type == 'sale' %}badge-sale{% else %}badge-rent{% endif %} fs-6 mb-2">
+<div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+    <div>
+        <span class="badge rounded-pill {% if property.deal_type == 'sale' %}badge-sale{% else %}badge-rent{% endif %} px-3 py-2 mb-2">
             {{ property.get_deal_type_display }}
         </span>
-        <h1 class="fw-bold">{{ property.title }}</h1>
-        <p class="text-muted"><i class="bi bi-geo-alt"></i> {{ property.address }}</p>
-        <h2 class="price">${{ property.price }}</h2>
+        <span class="badge rounded-pill bg-white text-dark border px-3 py-2 mb-2">{{ property.category.name }}</span>
+        <h1 class="fw-bold mb-1">{{ property.title }}</h1>
+        <p class="text-muted mb-0"><i class="bi bi-geo-alt"></i> {{ property.address }}</p>
+    </div>
+    {% if user == property.owner %}
+    <div class="d-flex gap-2">
+        <a href="{% url 'property_update' property.pk %}" class="btn btn-light-outline">
+            <i class="bi bi-pencil"></i> Редагувати
+        </a>
+        <a href="{% url 'property_delete' property.pk %}" class="btn btn-outline-danger" style="border-radius: 12px;">
+            <i class="bi bi-trash"></i> Видалити
+        </a>
+    </div>
+    {% endif %}
+</div>
 
-        <div class="row g-2 my-3">
-            <div class="col-4 text-center bg-light rounded p-2">
-                <div class="fw-bold">{{ property.rooms }}</div>
-                <small class="text-muted">кімнат</small>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div id="photos" class="gallery landing-section mb-4">
+            <div id="gallery" class="carousel slide" data-bs-ride="false">
+                <div class="carousel-inner">
+                    {% if property.main_image %}
+                    <div class="carousel-item active">
+                        <img src="{{ property.main_image.url }}" class="d-block w-100" alt="{{ property.title }}">
+                    </div>
+                    {% endif %}
+                    {% for img in property.images.all %}
+                    <div class="carousel-item {% if not property.main_image and forloop.first %}active{% endif %}">
+                        <img src="{{ img.image.url }}" class="d-block w-100" alt="{{ img.caption|default:property.title }}">
+                    </div>
+                    {% empty %}
+                        {% if not property.main_image %}
+                        <div class="carousel-item active">
+                            <div class="d-flex align-items-center justify-content-center bg-white border"
+                                 style="height: 300px; border-radius: 20px;">
+                                <i class="bi bi-house fs-1 text-muted"></i>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% if property.images.all %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#gallery" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#gallery" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                </button>
+                {% endif %}
             </div>
-            <div class="col-4 text-center bg-light rounded p-2">
-                <div class="fw-bold">{{ property.area_sqm }}</div>
-                <small class="text-muted">м²</small>
+
+            {% if property.images.all %}
+            <div class="d-flex gap-2 mt-2 overflow-auto pb-1">
+                {% if property.main_image %}
+                <img src="{{ property.main_image.url }}" class="gallery-thumb active" alt=""
+                     data-bs-target="#gallery" data-bs-slide-to="0">
+                {% endif %}
+                {% for img in property.images.all %}
+                <img src="{{ img.image.url }}" class="gallery-thumb" alt=""
+                     data-bs-target="#gallery" data-bs-slide-to="{% if property.main_image %}{{ forloop.counter }}{% else %}{{ forloop.counter0 }}{% endif %}">
+                {% endfor %}
             </div>
-            <div class="col-4 text-center bg-light rounded p-2">
-                <div class="fw-bold">{{ property.category.name|default:"—" }}</div>
-                <small class="text-muted">категорія</small>
-            </div>
+            {% endif %}
         </div>
 
-        {% if property.agent %}
-        <div class="card mb-3">
-            <div class="card-body d-flex align-items-center gap-3">
+        <div class="section-nav sticky-top d-flex gap-4 mb-3">
+            <a href="#features">Характеристики</a>
+            <a href="#description">Опис</a>
+            <a href="#location">Розташування</a>
+            {% if similar %}<a href="#similar">Схожі</a>{% endif %}
+        </div>
+
+        <section id="features" class="landing-section mb-5">
+            <h4 class="fw-bold mb-3">Характеристики</h4>
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <div class="feature">
+                        <i class="bi bi-door-open"></i>
+                        <div class="fw-bold fs-5 mt-2">{{ property.rooms }}</div>
+                        <small class="text-muted">кімнат</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="feature">
+                        <i class="bi bi-arrows-fullscreen"></i>
+                        <div class="fw-bold fs-5 mt-2">{{ property.area_sqm|floatformat:"-1" }} м²</div>
+                        <small class="text-muted">площа</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="feature">
+                        <i class="bi bi-cash-stack"></i>
+                        <div class="fw-bold fs-5 mt-2">${% widthratio property.price property.area_sqm 1 %}</div>
+                        <small class="text-muted">за м²</small>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="feature">
+                        <i class="bi bi-building"></i>
+                        <div class="fw-bold fs-5 mt-2">{{ property.category.name }}</div>
+                        <small class="text-muted">тип об'єкта</small>
+                    </div>
+                </div>
+            </div>
+            <p class="text-muted small mt-3 mb-0">
+                <i class="bi bi-calendar3"></i> Опубліковано {{ property.created_at|date:"d.m.Y" }}
+                · оновлено {{ property.updated_at|date:"d.m.Y" }}
+            </p>
+        </section>
+
+        <section id="description" class="landing-section mb-5">
+            <h4 class="fw-bold mb-3">Опис</h4>
+            <div class="card p-4">
+                {% if property.description %}
+                    {{ property.description|linebreaks }}
+                {% else %}
+                    <p class="text-muted mb-0">Власник ще не додав опис.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section id="location" class="landing-section mb-5">
+            <h4 class="fw-bold mb-3">Розташування</h4>
+            <p class="text-muted"><i class="bi bi-geo-alt"></i> {{ property.address }}</p>
+            {% if property.latitude and property.longitude %}
+            <div id="property-map" class="map-frame"
+                 data-lat="{{ property.latitude|stringformat:'f' }}"
+                 data-lng="{{ property.longitude|stringformat:'f' }}"></div>
+            {% else %}
+            <iframe class="map-frame" loading="lazy" title="Карта"
+                    src="https://maps.google.com/maps?q={{ property.address|urlencode }}&z=14&output=embed"></iframe>
+            {% endif %}
+        </section>
+    </div>
+
+    <div class="col-lg-4 d-none d-lg-block">
+        <div class="card p-4 sticky-top contact-card">
+            <div class="text-muted small">{% if property.deal_type == 'rent' %}Ціна за місяць{% else %}Ціна{% endif %}</div>
+            <div class="price fs-2 mb-3">${{ property.price|floatformat:"0g" }}</div>
+
+            {% if property.agent %}
+            <div class="d-flex align-items-center gap-3 mb-3">
                 {% if property.agent.photo %}
-                <img src="{{ property.agent.photo.url }}" class="rounded-circle" style="width:50px; height:50px; object-fit:cover;">
+                <img src="{{ property.agent.photo.url }}" class="agent-photo" alt="{{ property.agent.name }}">
+                {% else %}
+                <div class="agent-placeholder"><i class="bi bi-person"></i></div>
                 {% endif %}
                 <div>
                     <div class="fw-bold">{{ property.agent.name }}</div>
-                    <small class="text-muted">{{ property.agent.agency }}</small><br>
-                    <small><i class="bi bi-telephone"></i> {{ property.agent.phone }}</small>
+                    <small class="text-muted">{{ property.agent.agency|default:"Агент з нерухомості" }}</small>
                 </div>
             </div>
-        </div>
-        {% endif %}
+            <a href="tel:{{ property.agent.phone }}" class="btn btn-accent w-100 py-2 mb-2">
+                <i class="bi bi-telephone"></i> {{ property.agent.phone }}
+            </a>
+            <a href="mailto:{{ property.agent.email }}?subject={{ property.title|urlencode }}" class="btn btn-light-outline w-100 py-2">
+                <i class="bi bi-envelope"></i> Написати агенту
+            </a>
+            {% else %}
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="agent-placeholder"><i class="bi bi-person"></i></div>
+                <div>
+                    <div class="fw-bold">{{ property.owner.username }}</div>
+                    <small class="text-muted">Власник</small>
+                </div>
+            </div>
+            {% if property.owner.email %}
+            <a href="mailto:{{ property.owner.email }}?subject={{ property.title|urlencode }}" class="btn btn-accent w-100 py-2">
+                <i class="bi bi-envelope"></i> Написати власнику
+            </a>
+            {% else %}
+            <p class="text-muted small mb-0">Власник не вказав контакти.</p>
+            {% endif %}
+            {% endif %}
 
-        {% if user == property.owner %}
-        <div class="d-flex gap-2">
-            <a href="{% url 'property_update' property.pk %}" class="btn btn-outline-dark">
-                <i class="bi bi-pencil"></i> Редагувати
-            </a>
-            <a href="{% url 'property_delete' property.pk %}" class="btn btn-outline-danger">
-                <i class="bi bi-trash"></i> Видалити
-            </a>
+            <hr>
+            <ul class="list-unstyled small text-muted mb-0">
+                <li class="mb-1"><i class="bi bi-door-open"></i> {{ property.rooms }} кімн. · {{ property.area_sqm|floatformat:"-1" }} м²</li>
+                <li><i class="bi bi-geo-alt"></i> {{ property.address }}</li>
+            </ul>
         </div>
-        {% endif %}
     </div>
 </div>
 
-<div class="mt-4">
-    <h4 class="fw-bold">Опис</h4>
-    {{ property.description|linebreaks }}
-</div>
+{% if similar %}
+<section id="similar" class="landing-section mt-2">
+    <h4 class="fw-bold mb-3">Схожі об'єкти</h4>
+    <div class="row g-4">
+        {% for p in similar %}
+            {% include 'properties/_property_card.html' %}
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
 
-<a href="{% url 'property_list' %}" class="btn btn-light-outline mt-2">← До списку</a>
-
-<div class="modal fade" id="photoModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
-        <div class="modal-content bg-transparent border-0">
-            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3"
-                    data-bs-dismiss="modal" style="z-index: 10;"></button>
-            <img id="modalImage" src="" class="img-fluid rounded-4" alt="Фото">
+<div class="mobile-contact-bar fixed-bottom d-lg-none">
+    <div class="container d-flex align-items-center justify-content-between gap-3 py-3">
+        <div>
+            <div class="price fs-5 lh-1">${{ property.price|floatformat:"0g" }}</div>
+            <small class="text-muted">{{ property.rooms }} кімн. · {{ property.area_sqm|floatformat:"-1" }} м²</small>
         </div>
+        {% if property.agent %}
+        <a href="tel:{{ property.agent.phone }}" class="btn btn-accent px-4"><i class="bi bi-telephone"></i> Подзвонити</a>
+        {% elif property.owner.email %}
+        <a href="mailto:{{ property.owner.email }}" class="btn btn-accent px-4"><i class="bi bi-envelope"></i> Написати</a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const photoModal = document.getElementById('photoModal');
-    photoModal.addEventListener('show.bs.modal', function (event) {
-        const trigger = event.relatedTarget;
-        const fullUrl = trigger.getAttribute('data-full');
-        document.getElementById('modalImage').src = fullUrl;
-    });
+const mapEl = document.getElementById('property-map');
+if (mapEl) {
+    const point = [parseFloat(mapEl.dataset.lat), parseFloat(mapEl.dataset.lng)];
+    const map = L.map(mapEl, {scrollWheelZoom: false}).setView(point, 15);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap',
+        referrerPolicy: 'strict-origin-when-cross-origin',
+    }).addTo(map);
+    L.marker(point).addTo(map).bindPopup('{{ property.title|escapejs }}');
+}
+
+const gallery = document.getElementById('gallery');
+const thumbs = document.querySelectorAll('.gallery-thumb');
+gallery.addEventListener('slide.bs.carousel', function (event) {
+    thumbs.forEach(t => t.classList.remove('active'));
+    if (thumbs[event.to]) thumbs[event.to].classList.add('active');
 });
 </script>
 {% endblock %}

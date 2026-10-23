@@ -1,14 +1,27 @@
 {% extends 'base.html' %}
 {% block title %}{% if object %}Редагувати{% else %}Додати{% endif %} об'єкт — DomHub{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+    #map {
+        height: 320px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card p-4">
             <h2 class="fw-bold mb-4">{% if object %}Редагувати{% else %}Додати{% endif %} об'єкт</h2>
-                    <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
-                {% for field in form %}
+                {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+
+                {% for field in form.visible_fields %}
                 <div class="mb-3">
                     <label class="form-label fw-semibold">{{ field.label }}</label>
                     {{ field }}
@@ -16,6 +29,20 @@
                     <div class="text-danger small">{{ field.errors }}</div>
                     {% endif %}
                 </div>
+
+                {% if field.name == 'address' %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Точка на карті</label>
+                    <div id="map"></div>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small id="map-status" class="text-muted">Натисніть на карту, щоб позначити розташування об'єкта.</small>
+                        <button type="button" id="map-clear" class="btn btn-sm btn-link text-danger text-decoration-none">Прибрати точку</button>
+                    </div>
+                    {% if form.latitude.errors or form.longitude.errors %}
+                    <div class="text-danger small">{{ form.latitude.errors }}{{ form.longitude.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
                 {% endfor %}
 
                 {% if object and object.images.all %}
@@ -48,4 +75,59 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const latInput = document.getElementById('id_latitude');
+const lngInput = document.getElementById('id_longitude');
+const mapStatus = document.getElementById('map-status');
+
+const map = L.map('map').setView([50.4501, 30.5234], 11);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap',
+    referrerPolicy: 'strict-origin-when-cross-origin',
+}).addTo(map);
+
+let marker = null;
+
+function setPoint(lat, lng) {
+    latInput.value = lat.toFixed(6);
+    lngInput.value = lng.toFixed(6);
+    mapStatus.textContent = 'Обрано: ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
+
+    if (marker) {
+        marker.setLatLng([lat, lng]);
+    } else {
+        marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+        marker.on('dragend', function () {
+            const p = marker.getLatLng();
+            setPoint(p.lat, p.lng);
+        });
+    }
+}
+
+map.on('click', function (e) {
+    setPoint(e.latlng.lat, e.latlng.lng);
+});
+
+document.getElementById('map-clear').addEventListener('click', function () {
+    if (marker) {
+        map.removeLayer(marker);
+        marker = null;
+    }
+    latInput.value = '';
+    lngInput.value = '';
+    mapStatus.textContent = "Натисніть на карту, щоб позначити розташування об'єкта.";
+});
+
+if (latInput.value && lngInput.value) {
+    const lat = parseFloat(latInput.value.replace(',', '.'));
+    const lng = parseFloat(lngInput.value.replace(',', '.'));
+    setPoint(lat, lng);
+    map.setView([lat, lng], 15);
+}
+</script>
 {% endblock %}

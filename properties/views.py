@@ -73,8 +73,17 @@ def property_list(request):
 
 
 def property_detail(request, pk):
-    obj = get_object_or_404(Property, pk=pk)
-    return render(request, 'properties/property_detail.html', {'property': obj})
+    obj = get_object_or_404(Property.objects.select_related('category', 'agent', 'owner'), pk=pk)
+    similar = (
+        Property.objects.filter(is_active=True, category=obj.category)
+        .exclude(pk=obj.pk)
+        .select_related('category')
+        .order_by('-created_at')[:3]
+    )
+    return render(request, 'properties/property_detail.html', {
+        'property': obj,
+        'similar': similar,
+    })
 
 
 @login_required
