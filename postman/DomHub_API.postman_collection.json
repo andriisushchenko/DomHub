@@ -1,0 +1,618 @@
+{
+  "info": {
+    "_postman_id": "c9c38e55-a5ce-4bbb-bcb7-c9f6dc5548bf",
+    "name": "DomHub API (QA1)",
+    "description": "Автоматичні тести REST API (C5) та пагінації (B1).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "59006646",
+    "_collection_link": "https://go.postman.co/collection/59006646-c9c38e55-a5ce-4bbb-bcb7-c9f6dc5548bf?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Головна сторінка API",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));\npm.test(\"Є всі розділи API\", () => {\n    const json = pm.response.json();\n    pm.expect(json).to.have.keys(\"properties\", \"categories\", \"agents\");\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Список категорій",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));\npm.test(\"У базі є хоча б одна категорія\", () => {\n    const json = pm.response.json();\n    pm.expect(json.results.length).to.be.above(0);\n    pm.collectionVariables.set(\"categoryId\", json.results[0].id);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/categories",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "categories"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Створити без авторизації → 403",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"Тестова квартира (Postman)\",\n    \"price\": \"1200\",\n    \"deal_type\": \"rent\",\n    \"area_sqm\": 45,\n    \"rooms\": 2,\n    \"address\": \"Київ, Поділ\",\n    \"category\": \"{{categoryId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/properties",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "properties"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Створити з невірними даними → 400",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 400\", () => pm.response.to.have.status(400));\npm.test(\"Є помилки для полів title і price\", () => {\n    const json = pm.response.json();\n    pm.expect(json).to.have.property(\"title\");\n    pm.expect(json).to.have.property(\"price\");\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{username}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"\",\n    \"price\": \"abc\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/properties",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "properties"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Створити об'єкт → 201",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 201\", () => pm.response.to.have.status(201));\npm.test(\"Дані збереглися правильно\", () => {\n    const json = pm.response.json();\n    pm.expect(json.title).to.eql(\"Тестова квартира (Postman)\");\n    pm.expect(json.price).to.eql(\"1200.00\");\n    pm.expect(json.deal_type).to.eql(\"rent\");\n});\npm.test(\"Власник підставився автоматично\", () => {\n    pm.expect(pm.response.json().owner).to.eql(pm.environment.get(\"username\"));\n});\npm.collectionVariables.set(\"propertyId\", pm.response.json().id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{username}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"Тестова квартира (Postman)\",\n    \"price\": \"1200\",\n    \"deal_type\": \"rent\",\n    \"area_sqm\": 45,\n    \"rooms\": 2,\n    \"address\": \"Київ, Поділ\",\n    \"category\": \"{{categoryId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/properties",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "properties"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Отримати один об'єкт → 200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));\npm.test(\"Повернувся саме створений об'єкт\", () => {\n    const json = pm.response.json();\n    pm.expect(json.id).to.eql(Number(pm.collectionVariables.get(\"propertyId\")));\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "properties",
+            "{{propertyId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Частково змінити (PATCH) → 200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));\npm.test(\"Ціна змінилась, назва залишилась\", () => {\n    const json = pm.response.json();\n    pm.expect(json.price).to.eql(\"1500.00\");\n    pm.expect(json.title).to.eql(\"Тестова квартира (Postman)\");\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{username}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"price\": \"1500\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "properties",
+            "{{propertyId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Повністю змінити (PUT) → 200",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));\npm.test(\"Всі поля оновились\", () => {\n    const json = pm.response.json();\n    pm.expect(json.title).to.eql(\"Оновлена квартира (Postman)\");\n    pm.expect(json.rooms).to.eql(3);\n    pm.expect(json.deal_type).to.eql(\"sale\");\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{username}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"title\": \"Оновлена квартира (Postman)\",\n    \"price\": \"90000\",\n    \"deal_type\": \"sale\",\n    \"area_sqm\": 45,\n    \"rooms\": 3,\n    \"address\": \"Київ, Поділ\",\n    \"category\": \"{{categoryId}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "properties",
+            "{{propertyId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Змінити чужий об'єкт → 403",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{username2}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password2}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"price\": \"1\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "properties",
+            "{{propertyId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Видалити чужий об'єкт → 403",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 403\", () => pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{username2}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password2}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "properties",
+            "{{propertyId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Пагінація: limit більше максимуму",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 200\", () => pm.response.to.have.status(200));\npm.test(\"limit обрізано до 100\", () => pm.expect(pm.response.json().limit).to.eql(100));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/properties?limit=1000",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "properties"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "1000"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Видалити свій об'єкт → 204",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 204\", () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "{{username}}",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "properties",
+            "{{propertyId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Видалений об'єкт → 404",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Статус 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "properties",
+            "{{propertyId}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "propertyId",
+      "value": ""
+    }
+  ]
+}
