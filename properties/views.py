@@ -6,7 +6,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils.safestring import mark_safe
@@ -29,36 +29,47 @@ def home(request):
     })
 
 
-def property_list(request):
+def filter_properties(params):
     qs = Property.objects.filter(is_active=True).select_related('category')
 
-    q = request.GET.get('q', '').strip()
+    q = params.get('q', '').strip()
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(address__icontains=q))
 
-    deal_type = request.GET.get('deal_type')
+    deal_type = params.get('deal_type')
     if deal_type in ('sale', 'rent'):
         qs = qs.filter(deal_type=deal_type)
 
-    category = request.GET.get('category')
+    category = params.get('category')
     if category and category.isdigit():
         qs = qs.filter(category_id=category)
 
-    price_min = request.GET.get('price_min')
-    price_max = request.GET.get('price_max')
+    price_min = params.get('price_min')
+    price_max = params.get('price_max')
     if price_min and price_min.isdigit():
         qs = qs.filter(price__gte=price_min)
     if price_max and price_max.isdigit():
         qs = qs.filter(price__lte=price_max)
 
-    rooms = request.GET.get('rooms')
+    rooms = params.get('rooms')
     if rooms in ('1', '2', '3'):
         qs = qs.filter(rooms=rooms)
     elif rooms == '4':
         qs = qs.filter(rooms__gte=4)
 
+    sort = params.get('sort', 'new')
+    return qs.order_by(SORT_OPTIONS.get(sort, '-created_at'))
+
+
+def property_list(request):
+    qs = filter_properties(request.GET)
+    q = request.GET.get('q', '').strip()
+    deal_type = request.GET.get('deal_type')
+    category = request.GET.get('category')
+    price_min = request.GET.get('price_min')
+    price_max = request.GET.get('price_max')
+    rooms = request.GET.get('rooms')
     sort = request.GET.get('sort', 'new')
-    qs = qs.order_by(SORT_OPTIONS.get(sort, '-created_at'))
 
     paginator = Paginator(qs, 9)
     page_obj = paginator.get_page(request.GET.get('page'))
@@ -75,6 +86,34 @@ def property_list(request):
         'price_max': price_max or '',
         'current_deal_type': deal_type or '',
     })
+
+
+def property_map(request):
+    return render(request, 'properties/property_map.html', {
+        'categories': Category.objects.all(),
+    })
+
+
+def property_map_data(request):
+    qs = filter_properties(request.GET).filter(latitude__isnull=False, longitude__isnull=False)
+    results = []
+    for p in qs:
+        results.append({
+            'id': p.pk,
+            'title': p.title,
+            'price': float(p.price),
+            'deal_type': p.deal_type,
+            'deal_label': p.get_deal_type_display(),
+            'category': p.category.name,
+            'rooms': p.rooms,
+            'area': p.area_sqm,
+            'address': p.address,
+            'lat': float(p.latitude),
+            'lng': float(p.longitude),
+            'image': p.main_image.url if p.main_image else '',
+            'url': p.get_absolute_url(),
+        })
+    return JsonResponse({'count': len(results), 'results': results})
 
 
 def property_detail(request, pk):
