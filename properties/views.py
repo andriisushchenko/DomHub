@@ -116,6 +116,56 @@ def property_map_data(request):
     return JsonResponse({'count': len(results), 'results': results})
 
 
+def property_stats(request):
+    qs = list(filter_properties(request.GET))
+    sale = [p for p in qs if p.deal_type == 'sale']
+    rent = [p for p in qs if p.deal_type == 'rent']
+
+    def average(numbers):
+        return round(sum(numbers) / len(numbers)) if numbers else 0
+
+    cities = {}
+    for p in qs:
+        city = p.address.split(',')[0].strip()
+        cities[city] = cities.get(city, 0) + 1
+    top_cities = sorted(cities.items(), key=lambda c: c[1], reverse=True)[:8]
+
+    category_selected = bool(request.GET.get('category'))
+    by_category = {}
+    price_per_m2 = {}
+    for p in qs:
+        by_category[p.category.name] = by_category.get(p.category.name, 0) + 1
+        if p.deal_type == 'sale' and p.area_sqm:
+            group = p.address.split(',')[0].strip() if category_selected else p.category.name
+            price_per_m2.setdefault(group, []).append(float(p.price) / p.area_sqm)
+
+    chart_data = {
+        'cities': {'labels': [c[0] for c in top_cities], 'values': [c[1] for c in top_cities]},
+        'deals': {'labels': ['Продаж', 'Оренда'], 'values': [len(sale), len(rent)]},
+        'categories': {'labels': list(by_category), 'values': list(by_category.values())},
+        'price_per_m2': {
+            'labels': list(price_per_m2),
+            'values': [average(v) for v in price_per_m2.values()],
+        },
+    }
+
+    return render(request, 'properties/property_stats.html', {
+        'categories': Category.objects.all(),
+        'current_deal_type': request.GET.get('deal_type', ''),
+        'current_category': request.GET.get('category', ''),
+        'total': len(qs),
+        'avg_sale': average([float(p.price) for p in sale]),
+        'avg_rent': average([float(p.price) for p in rent]),
+        'avg_area': average([p.area_sqm for p in qs]),
+        'chart_data': chart_data,
+        'show_cities': len(chart_data['cities']['labels']) > 1,
+        'show_deals': len(sale) > 0 and len(rent) > 0,
+        'show_categories': len(chart_data['categories']['labels']) > 1,
+        'show_price': len(chart_data['price_per_m2']['labels']) > 1,
+        'price_title': 'за містами' if category_selected else 'за типами об\'єктів',
+    })
+
+
 def property_detail(request, pk):
     obj = get_object_or_404(Property.objects.select_related('category', 'agent', 'owner'), pk=pk)
     similar = (

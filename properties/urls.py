@@ -20,6 +20,7 @@ urlpatterns = [
     path('properties/', views.property_list, name='property_list'),
     path('map/', views.property_map, name='property_map'),
     path('map/data/', views.property_map_data, name='property_map_data'),
+    path('stats/', views.property_stats, name='property_stats'),
     path('property/<int:pk>/', views.property_detail, name='property_detail'),
     path('property/create/', views.property_create, name='property_create'),
     path('property/<int:pk>/edit/', views.property_update, name='property_update'),

@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}Статистика нерухомості — DomHub{% endblock %}
+{% block meta_description %}Статистика DomHub: кількість об'єктів у містах, частка продажу та оренди, середні ціни та ціна за м² за категоріями.{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 20px;
+        height: 100%;
+    }
+    .stat-card .value { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+    .chart-box { position: relative; height: 300px; }
+</style>
+{% endblock %}
+
+{% block full_width %}
+<section class="page-header">
+    <div class="container">
+        <h1 class="fw-bold mb-4">Статистика нерухомості</h1>
+        <form method="get" class="filter-card d-flex flex-wrap align-items-end gap-3 mx-0" style="max-width: none;">
+            <div>
+                <label>Угода</label>
+                <select name="deal_type" class="form-select">
+                    <option value="">Всі</option>
+                    <option value="sale" {% if current_deal_type == 'sale' %}selected{% endif %}>Продаж</option>
+                    <option value="rent" {% if current_deal_type == 'rent' %}selected{% endif %}>Оренда</option>
+                </select>
+            </div>
+            <div>
+                <label>Тип об'єкта</label>
+                <select name="category" class="form-select">
+                    <option value="">Будь-який</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if current_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-accent px-4 py-2">Застосувати</button>
+            <a href="{% url 'property_stats' %}" class="btn btn-link text-decoration-none fw-semibold text-dark">Скинути</a>
+        </form>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="text-muted">Усього об'єктів</div>
+            <div class="value">{{ total }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="text-muted">Середня ціна продажу</div>
+            <div class="value">{% if avg_sale %}${{ avg_sale|floatformat:"0g" }}{% else %}—{% endif %}</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="text-muted">Середня оренда / міс</div>
+            <div class="value">{% if avg_rent %}${{ avg_rent|floatformat:"0g" }}{% else %}—{% endif %}</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="text-muted">Середня площа</div>
+            <div class="value">{% if avg_area %}{{ avg_area }} м²{% else %}—{% endif %}</div>
+        </div>
+    </div>
+</div>
+
+{% if total %}
+<div class="row g-4">
+    {% if show_cities %}
+    <div class="{% if show_deals %}col-lg-8{% else %}col-12{% endif %}">
+        <div class="stat-card">
+            <h5 class="fw-bold">Об'єкти за містами</h5>
+            <div class="chart-box"><canvas id="chart-cities"></canvas></div>
+        </div>
+    </div>
+    {% endif %}
+    {% if show_deals %}
+    <div class="{% if show_cities %}col-lg-4{% else %}col-12{% endif %}">
+        <div class="stat-card">
+            <h5 class="fw-bold">Продаж та оренда</h5>
+            <div class="chart-box"><canvas id="chart-deals"></canvas></div>
+        </div>
+    </div>
+    {% endif %}
+    {% if show_categories %}
+    <div class="{% if show_price %}col-lg-4{% else %}col-12{% endif %}">
+        <div class="stat-card">
+            <h5 class="fw-bold">Типи об'єктів</h5>
+            <div class="chart-box"><canvas id="chart-categories"></canvas></div>
+        </div>
+    </div>
+    {% endif %}
+    {% if show_price %}
+    <div class="{% if show_categories %}col-lg-8{% else %}col-12{% endif %}">
+        <div class="stat-card">
+            <h5 class="fw-bold">Середня ціна продажу за м², $ — {{ price_title }}</h5>
+            <div class="chart-box"><canvas id="chart-price"></canvas></div>
+        </div>
+    </div>
+    {% endif %}
+    {% if not show_cities and not show_deals and not show_categories and not show_price %}
+    <div class="col-12">
+        <div class="card text-center py-4 text-muted">Для графіків замало даних — розширте фільтри.</div>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div class="card text-center py-5">
+    <h5 class="fw-bold">Немає даних</h5>
+    <p class="text-muted mb-0">За цими фільтрами не знайдено жодного об'єкта.</p>
+</div>
+{% endif %}
+
+{{ chart_data|json_script:"chart-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const data = JSON.parse(document.getElementById('chart-data').textContent);
+const palette = ['#6366f1', '#f97316', '#0f172a', '#38bdf8', '#22c55e', '#eab308', '#ec4899', '#94a3b8'];
+
+function drawChart(canvasId, type, chart, colors) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    new Chart(canvas, {
+        type: type,
+        data: {
+            labels: chart.labels,
+            datasets: [{data: chart.values, backgroundColor: colors, borderRadius: type === 'bar' ? 8 : 0, maxBarThickness: 70}],
+        },
+        options: {
+            maintainAspectRatio: false,
+            plugins: {legend: {display: type !== 'bar', position: 'bottom'}},
+            scales: type === 'bar' ? {y: {beginAtZero: true, ticks: {precision: 0}}} : {},
+        },
+    });
+}
+
+drawChart('chart-cities', 'bar', data.cities, '#6366f1');
+drawChart('chart-deals', 'doughnut', data.deals, ['#6366f1', '#f97316']);
+drawChart('chart-categories', 'pie', data.categories, palette);
+drawChart('chart-price', 'bar', data.price_per_m2, '#0f172a');
+</script>
+{% endblock %}

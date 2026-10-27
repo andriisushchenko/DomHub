@@ -178,6 +178,7 @@
                 <li class="nav-item"><a class="nav-link" href="{% url 'property_list' %}?deal_type=sale">Купівля</a></li>
                 <li class="nav-item"><a class="nav-link" href="{% url 'property_list' %}?deal_type=rent">Оренда</a></li>
                 <li class="nav-item"><a class="nav-link" href="{% url 'property_map' %}"><i class="bi bi-map"></i> Карта</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'property_stats' %}"><i class="bi bi-bar-chart"></i> Статистика</a></li>
             </ul>
             <div class="d-flex align-items-center gap-2">
                 {% if user.is_authenticated %}
