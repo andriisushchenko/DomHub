@@ -110,3 +110,12 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'properties.pagination.SkipLimitPagination',
 }
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'domhub-cache',
+    }
+}
+
+API_CACHE_TIMEOUT = 300

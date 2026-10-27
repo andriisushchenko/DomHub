@@ -1,5 +1,6 @@
 from rest_framework import permissions, viewsets
 
+from .cache import CachedResponseMixin
 from .models import Agent, Category, Property
 from .serializers import AgentSerializer, CategorySerializer, PropertySerializer
 
@@ -11,17 +12,17 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         return obj.owner == request.user
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(CachedResponseMixin, viewsets.ModelViewSet):
     queryset = Category.objects.all().order_by('id')
     serializer_class = CategorySerializer
 
 
-class AgentViewSet(viewsets.ModelViewSet):
+class AgentViewSet(CachedResponseMixin, viewsets.ModelViewSet):
     queryset = Agent.objects.all().order_by('id')
     serializer_class = AgentSerializer
 
 
-class PropertyViewSet(viewsets.ModelViewSet):
+class PropertyViewSet(CachedResponseMixin, viewsets.ModelViewSet):
     queryset = Property.objects.select_related('category', 'owner').prefetch_related('images').order_by('-created_at')
     serializer_class = PropertySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
