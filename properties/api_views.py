@@ -12,14 +12,23 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         return obj.owner == request.user
 
 
+class IsAdminOrReadOnly(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user.is_staff
+
+
 class CategoryViewSet(CachedResponseMixin, viewsets.ModelViewSet):
     queryset = Category.objects.all().order_by('id')
     serializer_class = CategorySerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 
 class AgentViewSet(CachedResponseMixin, viewsets.ModelViewSet):
     queryset = Agent.objects.all().order_by('id')
     serializer_class = AgentSerializer
+    permission_classes = [IsAdminOrReadOnly]
 
 
 class PropertyViewSet(CachedResponseMixin, viewsets.ModelViewSet):
