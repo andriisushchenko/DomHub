@@ -9,6 +9,30 @@
         border-radius: 14px;
         border: 1px solid var(--border);
     }
+    .dropzone {
+        border: 2px dashed var(--border);
+        border-radius: 14px;
+        padding: 28px;
+        text-align: center;
+        cursor: pointer;
+        color: var(--muted);
+        transition: border-color 0.2s, background 0.2s;
+    }
+    .dropzone.dragover {
+        border-color: var(--accent);
+        background: rgba(99, 102, 241, 0.06);
+        color: var(--accent);
+    }
+    .preview-img {
+        width: 100%;
+        height: 90px;
+        object-fit: cover;
+        border-radius: 10px;
+    }
+    #main-preview img {
+        max-height: 220px;
+        border-radius: 12px;
+    }
 </style>
 {% endblock %}
 
@@ -27,6 +51,13 @@
                     {{ field }}
                     {% if field.errors %}
                     <div class="text-danger small">{{ field.errors }}</div>
+                    {% endif %}
+                    {% if field.name == 'main_image' %}
+                    <div id="main-error" class="text-danger small mt-1"></div>
+                    <div id="main-preview" class="mt-2 d-none">
+                        <img src="" alt="Превʼю головного фото" class="img-fluid">
+                        <div class="small text-muted mt-1" id="main-info"></div>
+                    </div>
                     {% endif %}
                 </div>
 
@@ -65,7 +96,14 @@
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Додаткові фото (можна декілька)</label>
-                    <input type="file" name="extra_images" multiple class="form-control" accept="image/*">
+                    <div id="dropzone" class="dropzone">
+                        <i class="bi bi-cloud-arrow-up fs-2"></i>
+                        <div>Перетягніть фото сюди або <u>натисніть, щоб вибрати</u></div>
+                        <small>JPG, PNG, WebP · до 10 МБ кожне</small>
+                    </div>
+                    <input type="file" id="extra-images" name="extra_images" multiple accept="image/*" hidden>
+                    <div id="extra-error" class="text-danger small mt-1"></div>
+                    <div id="extra-previews" class="row g-2 mt-1"></div>
                 </div>
 
                 <button type="submit" class="btn btn-accent fw-bold w-100">Зберегти</button>
@@ -129,5 +167,121 @@ if (latInput.value && lngInput.value) {
     setPoint(lat, lng);
     map.setView([lat, lng], 15);
 }
+</script>
+
+<script>
+const MAX_SIZE = 10 * 1024 * 1024;
+
+function formatSize(bytes) {
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' КБ';
+    return (bytes / 1024 / 1024).toFixed(1) + ' МБ';
+}
+
+function checkFile(file) {
+    if (!file.type.startsWith('image/')) return 'це не зображення';
+    if (file.size > MAX_SIZE) return 'файл більший за 10 МБ (' + formatSize(file.size) + ')';
+    return '';
+}
+
+function readFile(file) {
+    return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+    });
+}
+
+const mainInput = document.getElementById('id_main_image');
+const mainPreview = document.getElementById('main-preview');
+const mainImg = mainPreview.querySelector('img');
+const mainInfo = document.getElementById('main-info');
+const mainError = document.getElementById('main-error');
+
+mainInput.addEventListener('change', async () => {
+    const file = mainInput.files[0];
+    mainError.textContent = '';
+    mainPreview.classList.add('d-none');
+    if (!file) return;
+
+    const error = checkFile(file);
+    if (error) {
+        mainError.textContent = file.name + ': ' + error;
+        mainInput.value = '';
+        return;
+    }
+
+    mainImg.onload = () => {
+        mainInfo.textContent = file.name + ' · ' + formatSize(file.size) + ' · ' + mainImg.naturalWidth + '×' + mainImg.naturalHeight + ' px';
+    };
+    mainImg.src = await readFile(file);
+    mainPreview.classList.remove('d-none');
+});
+
+const dropzone = document.getElementById('dropzone');
+const extraInput = document.getElementById('extra-images');
+const extraPreviews = document.getElementById('extra-previews');
+const extraError = document.getElementById('extra-error');
+let selectedFiles = [];
+
+function syncInput() {
+    const transfer = new DataTransfer();
+    selectedFiles.forEach(file => transfer.items.add(file));
+    extraInput.files = transfer.files;
+}
+
+async function renderPreviews() {
+    extraPreviews.innerHTML = '';
+    for (const [index, file] of selectedFiles.entries()) {
+        const col = document.createElement('div');
+        col.className = 'col-4 col-md-3 position-relative';
+        col.innerHTML =
+            '<img class="preview-img" alt="">' +
+            '<button type="button" class="btn-close position-absolute top-0 end-0 m-2 bg-white rounded-circle p-1" data-index="' + index + '"></button>' +
+            '<div class="small text-muted text-truncate mt-1"></div>';
+        col.querySelector('img').src = await readFile(file);
+        col.querySelector('div').textContent = file.name + ' · ' + formatSize(file.size);
+        extraPreviews.appendChild(col);
+    }
+}
+
+function addFiles(files) {
+    const errors = [];
+    for (const file of files) {
+        const error = checkFile(file);
+        if (error) errors.push(file.name + ': ' + error);
+        else selectedFiles.push(file);
+    }
+    extraError.textContent = errors.join('; ');
+    syncInput();
+    renderPreviews();
+}
+
+dropzone.addEventListener('click', () => extraInput.click());
+
+extraInput.addEventListener('change', () => {
+    const picked = [...extraInput.files].filter(file => !selectedFiles.includes(file));
+    addFiles(picked);
+});
+
+dropzone.addEventListener('dragover', event => {
+    event.preventDefault();
+    dropzone.classList.add('dragover');
+});
+
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+
+dropzone.addEventListener('drop', event => {
+    event.preventDefault();
+    dropzone.classList.remove('dragover');
+    addFiles(event.dataTransfer.files);
+});
+
+extraPreviews.addEventListener('click', event => {
+    const button = event.target.closest('[data-index]');
+    if (!button) return;
+    selectedFiles.splice(Number(button.dataset.index), 1);
+    syncInput();
+    renderPreviews();
+});
 </script>
 {% endblock %}
