@@ -23,3 +23,8 @@ staticfiles/
 # OS
 .DS_Store
 Thumbs.db
+
+# Tests
+.coverage
+htmlcov/
+.pytest_cache/

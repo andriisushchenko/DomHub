@@ -1,0 +1,14 @@
+[run]
+source =
+    properties
+    DomHub
+omit =
+    */migrations/*
+    */management/*
+    properties/tests.py
+    DomHub/asgi.py
+    DomHub/wsgi.py
+
+[report]
+show_missing = True
+skip_covered = False
