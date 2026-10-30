@@ -108,7 +108,7 @@ class ApiPermissionTests(BaseTestCase):
 
     def test_anonymous_cannot_create(self):
         response = self.post_json('/api/properties/', {**self.new_property, 'category': self.category.pk})
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 403)
 
     def test_logged_in_user_creates_property_as_owner(self):
         self.login('stranger')
