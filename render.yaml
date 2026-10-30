@@ -3,6 +3,7 @@ services:
     name: domhub
     runtime: python
     plan: free
+    autoDeploy: false
     buildCommand: bash build.sh
     startCommand: gunicorn DomHub.wsgi:application
     envVars:
