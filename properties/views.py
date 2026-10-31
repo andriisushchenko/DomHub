@@ -287,7 +287,7 @@ def register(request):
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             return redirect('home')
     else:
         form = UserCreationForm()
@@ -302,6 +302,7 @@ def robots_txt(request):
         'Disallow: /api/',
         'Disallow: /login/',
         'Disallow: /register/',
+        'Disallow: /accounts/',
         'Disallow: /property/create/',
         'Disallow: /property/*/edit/',
         'Disallow: /property/*/delete/',
