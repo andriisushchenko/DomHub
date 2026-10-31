@@ -13,6 +13,7 @@ from django.utils.safestring import mark_safe
 
 from .forms import PropertyForm
 from .models import Category, Property, PropertyImage
+from .premium import is_premium
 
 SORT_OPTIONS = {
     'new': '-created_at',
@@ -117,6 +118,9 @@ def property_map_data(request):
 
 
 def property_stats(request):
+    if not is_premium(request.user):
+        return render(request, 'properties/premium_required.html', status=403)
+
     qs = list(filter_properties(request.GET))
     sale = [p for p in qs if p.deal_type == 'sale']
     rent = [p for p in qs if p.deal_type == 'rent']
