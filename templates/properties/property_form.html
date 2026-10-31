@@ -41,7 +41,7 @@
     <div class="col-md-8">
         <div class="card p-4">
             <h2 class="fw-bold mb-4">{% if object %}Редагувати{% else %}Додати{% endif %} об'єкт</h2>
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data" id="property-form">
                 {% csrf_token %}
                 {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
 
@@ -106,7 +106,7 @@
                     <div id="extra-previews" class="row g-2 mt-1"></div>
                 </div>
 
-                <button type="submit" class="btn btn-accent fw-bold w-100">Зберегти</button>
+                <button type="submit" id="save-button" class="btn btn-accent fw-bold w-100">Зберегти</button>
                 <a href="{% url 'property_list' %}" class="btn btn-outline-secondary w-100 mt-2">Скасувати</a>
             </form>
 
@@ -282,6 +282,21 @@ extraPreviews.addEventListener('click', event => {
     selectedFiles.splice(Number(button.dataset.index), 1);
     syncInput();
     renderPreviews();
+});
+</script>
+
+<script>
+const propertyForm = document.getElementById('property-form');
+const saveButton = document.getElementById('save-button');
+
+propertyForm.addEventListener('submit', () => {
+    saveButton.disabled = true;
+    saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Збереження…';
+});
+
+window.addEventListener('pageshow', () => {
+    saveButton.disabled = false;
+    saveButton.textContent = 'Зберегти';
 });
 </script>
 {% endblock %}
