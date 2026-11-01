@@ -66,6 +66,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'properties.premium.premium_context',
+                'properties.context_processors.analytics',
             ],
         },
     },
@@ -150,6 +151,8 @@ CACHES = {
 }
 
 API_CACHE_TIMEOUT = 300
+
+GA_MEASUREMENT_ID = os.environ.get('GA_MEASUREMENT_ID', '')
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
