@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Property
+from .models import Agent, Property
 
 
 class PropertyForm(forms.ModelForm):
@@ -26,3 +26,11 @@ class PropertyForm(forms.ModelForm):
             'agent': forms.Select(attrs={'class': 'form-select'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        agent_id = self.data.get('agent') if self.is_bound else self.initial.get('agent')
+        if str(agent_id).isdigit():
+            self.fields['agent'].queryset = Agent.objects.filter(pk=agent_id)
+        else:
+            self.fields['agent'].queryset = Agent.objects.none()

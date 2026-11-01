@@ -16,6 +16,8 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):
     list_display = ('name', 'agency', 'phone', 'email')
+    search_fields = ('name',)
+    ordering = ('id',)
 
 
 @admin.register(Property)
@@ -23,6 +25,7 @@ class PropertyAdmin(admin.ModelAdmin):
     list_display = ('title', 'price', 'deal_type', 'category', 'owner', 'is_active')
     list_filter = ('deal_type', 'is_active', 'category')
     search_fields = ('title', 'address')
+    autocomplete_fields = ('agent',)
     inlines = [PropertyImageInline]
 
 

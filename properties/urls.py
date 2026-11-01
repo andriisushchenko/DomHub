@@ -26,6 +26,7 @@ urlpatterns = [
     path('property/<int:pk>/edit/', views.property_update, name='property_update'),
     path('property/<int:pk>/delete/', views.property_delete, name='property_delete'),
     path('register/', views.register, name='register'),
+    path('agents/search/', views.agent_search, name='agent_search'),
     path('api/', include(router.urls)),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='sitemap'),
     path('robots.txt', views.robots_txt, name='robots_txt'),

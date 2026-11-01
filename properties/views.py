@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 
 from .forms import PropertyForm
-from .models import Category, Property, PropertyImage
+from .models import Agent, Category, Property, PropertyImage
 from .premium import is_premium
 
 SORT_OPTIONS = {
@@ -283,6 +283,19 @@ def property_delete(request, pk):
     return render(request, 'properties/property_confirm_delete.html', {'object': obj})
 
 
+@login_required
+def agent_search(request):
+    q = request.GET.get('q', '').strip()
+    if len(q) < 3:
+        return JsonResponse({'results': []})
+
+    agents = Agent.objects.filter(Q(name__icontains=q) | Q(name__icontains=q.title()))[:20]
+    return JsonResponse({'results': [
+        {'id': agent.pk, 'text': f'{agent.name} — {agent.agency}' if agent.agency else agent.name}
+        for agent in agents
+    ]})
+
+
 def register(request):
     if request.user.is_authenticated:
         return redirect('home')
@@ -307,6 +320,7 @@ def robots_txt(request):
         'Disallow: /login/',
         'Disallow: /register/',
         'Disallow: /accounts/',
+        'Disallow: /agents/',
         'Disallow: /property/create/',
         'Disallow: /property/*/edit/',
         'Disallow: /property/*/delete/',
