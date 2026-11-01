@@ -28,12 +28,13 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/api",
+          "raw": "{{baseUrl}}/api/",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
-            "api"
+            "api",
+            ""
           ]
         }
       },
@@ -59,13 +60,14 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/api/categories",
+          "raw": "{{baseUrl}}/api/categories/",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
-            "categories"
+            "categories",
+            ""
           ]
         }
       },
@@ -105,13 +107,14 @@
           }
         },
         "url": {
-          "raw": "{{baseUrl}}/api/properties",
+          "raw": "{{baseUrl}}/api/properties/",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
-            "properties"
+            "properties",
+            ""
           ]
         }
       },
@@ -163,13 +166,14 @@
           }
         },
         "url": {
-          "raw": "{{baseUrl}}/api/properties",
+          "raw": "{{baseUrl}}/api/properties/",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
-            "properties"
+            "properties",
+            ""
           ]
         }
       },
@@ -221,13 +225,14 @@
           }
         },
         "url": {
-          "raw": "{{baseUrl}}/api/properties",
+          "raw": "{{baseUrl}}/api/properties/",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
-            "properties"
+            "properties",
+            ""
           ]
         }
       },
@@ -253,14 +258,15 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}/",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
             "properties",
-            "{{propertyId}}"
+            "{{propertyId}}",
+            ""
           ]
         }
       },
@@ -312,14 +318,15 @@
           }
         },
         "url": {
-          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}/",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
             "properties",
-            "{{propertyId}}"
+            "{{propertyId}}",
+            ""
           ]
         }
       },
@@ -371,14 +378,15 @@
           }
         },
         "url": {
-          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}/",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
             "properties",
-            "{{propertyId}}"
+            "{{propertyId}}",
+            ""
           ]
         }
       },
@@ -430,14 +438,15 @@
           }
         },
         "url": {
-          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}/",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
             "properties",
-            "{{propertyId}}"
+            "{{propertyId}}",
+            ""
           ]
         }
       },
@@ -475,14 +484,15 @@
         "method": "DELETE",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}/",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
             "properties",
-            "{{propertyId}}"
+            "{{propertyId}}",
+            ""
           ]
         }
       },
@@ -508,13 +518,14 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/api/properties?limit=1000",
+          "raw": "{{baseUrl}}/api/properties/?limit=1000",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
-            "properties"
+            "properties",
+            ""
           ],
           "query": [
             {
@@ -558,14 +569,15 @@
         "method": "DELETE",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}/",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
             "properties",
-            "{{propertyId}}"
+            "{{propertyId}}",
+            ""
           ]
         }
       },
@@ -591,14 +603,15 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{baseUrl}}/api/properties/{{propertyId}}",
+          "raw": "{{baseUrl}}/api/properties/{{propertyId}}/",
           "host": [
             "{{baseUrl}}"
           ],
           "path": [
             "api",
             "properties",
-            "{{propertyId}}"
+            "{{propertyId}}",
+            ""
           ]
         }
       },

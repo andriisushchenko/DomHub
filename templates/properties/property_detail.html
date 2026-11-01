@@ -2,7 +2,7 @@
 
 {% block title %}{{ property.title }} — {{ property.get_deal_type_display }}, ${{ property.price|floatformat:"0g" }} | DomHub{% endblock %}
 
-{% block meta_description %}{% filter truncatechars:160 %}{{ property.get_deal_type_display }}: {{ property.category.name|lower }}, {{ property.rooms }} кімн., {{ property.area_sqm|floatformat:"-1" }} м², {{ property.address }}. Ціна ${{ property.price|floatformat:"0g" }}. {{ property.description }}{% endfilter %}{% endblock %}
+{% block meta_description %}{{ property.get_deal_type_display }}: {{ property.category.name|lower }}, {{ property.rooms }} кімн., {{ property.area_sqm|floatformat:"-1" }} м², {{ property.address|truncatechars:60 }}. Ціна ${{ property.price|floatformat:"0g" }}. Фото, карта та контакти агента.{% endblock %}
 
 {% block meta_robots %}{% if property.is_active %}index, follow{% else %}noindex, follow{% endif %}{% endblock %}
 
@@ -193,7 +193,7 @@
         </div>
 
         <section id="features" class="landing-section mb-5">
-            <h4 class="fw-bold mb-3">Характеристики</h4>
+            <h2 class="h4 fw-bold mb-3">Характеристики</h2>
             <div class="row g-3">
                 <div class="col-6 col-md-3">
                     <div class="feature">
@@ -231,7 +231,7 @@
         </section>
 
         <section id="description" class="landing-section mb-5">
-            <h4 class="fw-bold mb-3">Опис</h4>
+            <h2 class="h4 fw-bold mb-3">Опис</h2>
             <div class="card p-4">
                 {% if property.description %}
                     {{ property.description|linebreaks }}
@@ -242,7 +242,7 @@
         </section>
 
         <section id="location" class="landing-section mb-5">
-            <h4 class="fw-bold mb-3">Розташування</h4>
+            <h2 class="h4 fw-bold mb-3">Розташування</h2>
             <p class="text-muted"><i class="bi bi-geo-alt"></i> {{ property.address }}</p>
             {% if property.latitude and property.longitude %}
             <div id="property-map" class="map-frame"
@@ -306,7 +306,7 @@
 
 {% if similar %}
 <section id="similar" class="landing-section mt-2">
-    <h4 class="fw-bold mb-3">Схожі об'єкти</h4>
+    <h2 class="h4 fw-bold mb-3">Схожі об'єкти</h2>
     <div class="row g-4">
         {% for p in similar %}
             {% include 'properties/_property_card.html' %}
